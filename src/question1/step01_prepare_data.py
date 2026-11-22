@@ -1,3 +1,14 @@
+# 文件：src/question1/step01_prepare_data.py
+# 第一问 · 第 01 步：数据准备与基础质量核验（已实现）。
+# 作用：调用 src/common/io.py 读取合并后的年度数据，检查格式后导出建模宽表。
+# 输入：data/interim/ 中的年度合并 CSV 或 XLSX（实际路径由 --input 指定）。
+# 输出：默认 data/processed/q1_annual_clean.csv。
+# 运行：在项目根目录执行
+#       python -m src.question1.step01_prepare_data --input "data/interim/年度合并.xlsx"
+# 参数：--sheet 可指定 Excel 工作表；--header-row 指定标题行（从 1 起）。
+# 注意：缺失值、重复年份或非数值列将触发报错；不会擅自填 0 或插值。
+# 下一步：人工核对来源与统计口径，再运行 step02_correlation.py。
+
 """Step 01：检查并导出年度宽表，不擅自填补缺失值。"""
 
 import argparse
