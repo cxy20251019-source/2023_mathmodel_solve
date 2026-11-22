@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# Temporary exports / office lock files
+~$*
+*.tmp
+*.bak
+
+# This repository intentionally allows committing source datasets and
+# verified paper outputs when their source/license permits publication.
