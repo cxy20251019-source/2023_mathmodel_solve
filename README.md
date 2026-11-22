@@ -77,29 +77,3 @@ python -m src.question1.step01_prepare_data --input "data/interim/年度合并.x
 2. 按“数据 → 相关性 → CRITIC → 建模 → 验证 → 论文”的顺序推进；每步有结果后人工核验。
 3. `outputs` 用于可复现的分析输出；不允许用手工伪造的表格或图代替运行结果。
 4. 后续题目目录仅预留，实际任务拆分以原题要求为准。
-
-## 项目各层的 Python 辅助脚本
-
-除了 `src/` 中的正式建模代码，以下目录也提供可以独立运行的工具。**每个 .py 文件开头都有中文说明**（作用、输入、输出、运行方式与注意事项）：
-
-| 位置 | Python 文件 | 主要用途 |
-|---|---|---|
-| 项目根目录 | `run_project.py` | 统一运行入口 |
-| `data/` | `check_sources.py` | 检查指标来源登记表完整性 |
-| `data/` | `inspect_annual.py` | 预览 Excel/CSV 的字段、缺失值和样本量 |
-| `docs/` | `append_run_log.py` | 将核验记录追加到已有 Markdown 实验日志 |
-| `outputs/` | `list_results.py` | 列出实际存在的结果文件 |
-| `paper/` | `check_materials.py` | 检查论文分节、文献、图表是否齐备 |
-| `tests/` | `test_project_tools.py` | 自动检验这些辅助工具的基本行为 |
-
-在仓库根目录可以运行：
-
-```bash
-python run_project.py check-sources
-python run_project.py inspect-data --input "data/interim/年度合并.xlsx"
-python run_project.py list-results
-python run_project.py check-paper
-python -m pytest -q
-```
-
-特别说明：`data/raw/`、`data/interim/`、`data/processed/` 应专门存放数据，因此不在这些子目录放 Python 脚本；`.github/workflows/` 是 GitHub Actions 的 YAML 配置目录，也不需要额外的 Python 文件。第一问的**模型代码仍集中在 `src/question1/`**，不会因增加辅助脚本而改变流程。
