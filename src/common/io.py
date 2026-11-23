@@ -1,7 +1,7 @@
 # 文件：src/common/io.py
 # 所属：公共工具层（被第一问的数据准备脚本调用）。
 # 作用：读取年度 CSV/XLSX，将列名统一成 year、Y1、Y2、X1～X6，
-#       验证年份唯一、指标为数值且无缺失，并按年份排序后返回 DataFrame。
+#       验证年份唯一、指标为数值，默认拒绝缺失，并按年份排序后返回 DataFrame。
 # 输入：本地 CSV 或 XLSX；Excel 可指定工作表和标题行。
 # 输出：内存中的 Pandas DataFrame；这个文件本身不负责保存 CSV。
 # 调用者：src/question1/step01_prepare_data.py。
@@ -21,13 +21,16 @@ INDICATOR_COLUMNS = REQUIRED_COLUMNS[1:]
 YEAR_ALIASES = {"year", "年份", "年"}
 
 
-def read_annual_data(path: str | Path, *, sheet_name: str | int = 0, header: int = 0) -> pd.DataFrame:
-    """读取一张年度宽表并返回规范 9 列；发现异常就抛错，不做插值。
+def read_annual_data(
+    path: str | Path, *, sheet_name: str | int = 0, header: int = 0, allow_missing: bool = False
+) -> pd.DataFrame:
+    """读取年度宽表并返回规范 9 列，按年份升序排列。
 
     参数：
       path: CSV / XLSX 路径
       sheet_name: Excel 工作表名或从 0 开始的序号
       header: 标题行的零基序号
+      allow_missing: 是否保留空白指标。年份必须完整，指标文本和无穷值仍会报错。
     """
     source = Path(path)
     if not source.is_file():
@@ -37,9 +40,9 @@ def read_annual_data(path: str | Path, *, sheet_name: str | int = 0, header: int
 
     extension = source.suffix.lower()
     if extension == ".csv":
-        df = pd.read_csv(source, header=header, encoding="utf-8-sig")
+        df = pd.read_csv(source, header=header, encoding="utf-8-sig", keep_default_na=False)
     elif extension == ".xlsx":
-        df = pd.read_excel(source, sheet_name=sheet_name, header=header)
+        df = pd.read_excel(source, sheet_name=sheet_name, header=header, keep_default_na=False)
     else:
         raise ValueError(f"仅支持 CSV 或 XLSX，得到：{source.suffix}")
 
@@ -49,11 +52,12 @@ def read_annual_data(path: str | Path, *, sheet_name: str | int = 0, header: int
     rename_map: dict[object, str] = {}
     for column in df.columns:
         key = str(column).strip()
-        upper = key.upper()
+        # 合并表可能在指标代码后附上中文名称和单位，例如“Y1 新能源汽车销量（万辆）”。
+        code = key.split(maxsplit=1)[0].upper() if key else ""
         if key.lower() in YEAR_ALIASES:
             rename_map[column] = "year"
-        elif upper in INDICATOR_COLUMNS:
-            rename_map[column] = upper
+        elif code in INDICATOR_COLUMNS:
+            rename_map[column] = code
         else:
             rename_map[column] = key
 
@@ -78,14 +82,17 @@ def read_annual_data(path: str | Path, *, sheet_name: str | int = 0, header: int
         raise ValueError(f"存在重复年份：{years}")
 
     for col in INDICATOR_COLUMNS:
-        raw = out[col]
-        # 千分位分隔符可以直接去除；其他文本值不会被猜测或替换。
-        cleaned = raw.astype("string").str.strip().str.replace(",", "", regex=False)
-        numeric = pd.to_numeric(cleaned, errors="coerce")
-        bad = numeric.isna() | ~np.isfinite(numeric.to_numpy(dtype=float))
+        cleaned = out[col].astype("string").str.strip()
+        # 先识别空白，再转换数值，避免把非法文本误当作可保留的缺失值。
+        missing = cleaned.eq("").fillna(False)
+        numeric = pd.to_numeric(cleaned.str.replace(",", "", regex=False), errors="coerce")
+        values = numeric.to_numpy(dtype=float, na_value=np.nan)
+        bad = ~np.isfinite(values)
+        if allow_missing:
+            bad &= ~missing.to_numpy(dtype=bool)
         if bad.any():
             years = out.loc[bad, "year"].tolist()
             raise ValueError(f"{col} 存在缺失或非数值记录，年份：{years}；请人工核查来源")
-        out[col] = numeric.astype(float)
+        out[col] = values
 
     return out.sort_values("year").reset_index(drop=True)

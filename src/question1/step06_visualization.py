@@ -1,6 +1,6 @@
 # 文件：src/question1/step06_visualization.py
 # 第一问 · 第 06 步：论文图表生成（尚未实现）。
-# 目标：把已经验收的计算结果绘制成相关性热力图、权重图和排序图等。
+# 目标：把已经验收的计算结果绘制成相关性热力图、VIF 图和回归系数图等。
 # 计划输入：outputs/question1/tables/ 与 validation/ 内的已核验结果。
 # 计划输出：outputs/question1/figures/ 中的图片文件。
 # 注意：本文件只负责可复现的图表呈现，不制造或手工篡改数据。

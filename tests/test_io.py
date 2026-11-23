@@ -58,3 +58,28 @@ def test_excel_input(tmp_path):
     input_file = tmp_path / "input.xlsx"
     sample().to_excel(input_file, index=False)
     assert read_annual_data(input_file)["year"].tolist() == [2020, 2021]
+
+
+def test_excel_descriptive_headers_and_opt_in_missing(tmp_path):
+    input_file = tmp_path / "input.xlsx"
+    df = sample().rename(columns={"y1": "Y1 新能源汽车销量（万辆）", "x2": "X2 公共充电桩保有量（个）"})
+    df.loc[0, "X2 公共充电桩保有量（个）"] = None
+    df.to_excel(input_file, index=False)
+
+    with pytest.raises(ValueError, match="X2"):
+        read_annual_data(input_file)
+
+    actual = read_annual_data(input_file, allow_missing=True)
+    assert actual.columns.tolist() == REQUIRED_COLUMNS
+    assert pd.isna(actual.loc[0, "X2"])
+    assert actual.loc[1, "X2"] == df.loc[1, "X2 公共充电桩保有量（个）"]
+
+
+def test_allow_missing_still_rejects_text(tmp_path):
+    input_file = tmp_path / "input.csv"
+    df = sample().astype({"x5": str})
+    df.loc[0, "x5"] = "NA"
+    df.to_csv(input_file, index=False)
+
+    with pytest.raises(ValueError, match="X5"):
+        read_annual_data(input_file, allow_missing=True)
